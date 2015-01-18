@@ -1,6 +1,7 @@
 package com.herokuapp.ezhao.penciled;
 
 import android.database.Cursor;
+import android.database.DatabaseUtils;
 import android.provider.ContactsContract;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
@@ -15,6 +16,7 @@ import android.widget.SimpleCursorAdapter;
 public class MainActivity extends ActionBarActivity {
 
     private ListView lvContactsTest;
+    private Cursor mCursor;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -27,7 +29,6 @@ public class MainActivity extends ActionBarActivity {
         lvContactsTest = (ListView) findViewById(R.id.lvContactsTest);
 
         // Create Cursor
-        Cursor mCursor;
         String[] mProjection = {
                 ContactsContract.Contacts._ID,
                 ContactsContract.Contacts.DISPLAY_NAME_PRIMARY,
@@ -55,7 +56,7 @@ public class MainActivity extends ActionBarActivity {
         String[] mContactCols = {
                 ContactsContract.Contacts.DISPLAY_NAME_PRIMARY,
                 ContactsContract.Contacts.PHOTO_URI,
-                ContactsContract.Contacts.HAS_PHONE_NUMBER
+                ContactsContract.Contacts._ID
         };
         CursorAdapter mCursorAdapter = new SimpleCursorAdapter(
                 getApplicationContext(),
@@ -68,6 +69,22 @@ public class MainActivity extends ActionBarActivity {
 
         // Inflate
         lvContactsTest.setAdapter(mCursorAdapter);
+
+        String mDataQuery = ContactsContract.Data.CONTACT_ID + "=?" +
+                              " AND " +
+                              ContactsContract.Data.MIMETYPE + "='" + ContactsContract.CommonDataKinds.Email.CONTENT_ITEM_TYPE + "'";
+        String contactId = "1";
+        Cursor mDataContentResolver = getContentResolver().query(
+                ContactsContract.Data.CONTENT_URI,
+                new String[] {ContactsContract.Data._ID,
+                              ContactsContract.CommonDataKinds.Email.ADDRESS,
+                              ContactsContract.CommonDataKinds.Email.TYPE
+                              },
+                mDataQuery,
+                new String[] {String.valueOf(contactId)},
+                null
+        );
+        Log.i("Emily", DatabaseUtils.dumpCursorToString(mDataContentResolver));
 
         Log.i("Emily", "End");
     }
@@ -93,5 +110,10 @@ public class MainActivity extends ActionBarActivity {
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    protected void onDestroy() {
+        mCursor.close();
     }
 }

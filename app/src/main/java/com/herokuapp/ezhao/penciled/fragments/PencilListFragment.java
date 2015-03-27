@@ -13,9 +13,11 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ListView;
+import android.widget.Toast;
 
 import com.herokuapp.ezhao.penciled.R;
 import com.herokuapp.ezhao.penciled.adapters.PencilListAdapter;
+import com.herokuapp.ezhao.penciled.helpers.Helper;
 import com.herokuapp.ezhao.penciled.models.PencilPerson;
 import com.parse.FindCallback;
 import com.parse.ParseException;
@@ -62,29 +64,28 @@ public class PencilListFragment extends Fragment {
         pencilListAdapter = new PencilListAdapter((Context) listener, pencilPeopleList);
         lvPencilList.setAdapter(pencilListAdapter);
 
-        // TODO(emily) Online if you're offline
-        ParseQuery<PencilPerson> queryLocal = ParseQuery.getQuery(PencilPerson.class);
-        queryLocal.fromLocalDatastore();
-        queryLocal.findInBackground(new FindCallback<PencilPerson>() {
-            @Override
-            public void done(List<PencilPerson> pencilPeople, ParseException e) {
-                pencilListAdapter.addAll(pencilPeople);
-            }
-        });
-
-        // TODO(emily) Only if you're online, or maybe start with the above and THEN do this
         ParseQuery<PencilPerson> query = ParseQuery.getQuery(PencilPerson.class);
-        query.findInBackground(new FindCallback<PencilPerson>() {
-            @Override
-            public void done(List<PencilPerson> pencilPeople, ParseException e) {
-                try {
-                    ParseObject.pinAll(pencilPeople);
-                } catch (ParseException e1) {
-                    e1.printStackTrace();
+        if (Helper.isNetworkAvailable((Context) listener)) {
+            query.findInBackground(new FindCallback<PencilPerson>() {
+                @Override
+                public void done(List<PencilPerson> pencilPeople, ParseException e) {
+                    try {
+                        ParseObject.pinAll(pencilPeople);
+                    } catch (ParseException e1) {
+                        e1.printStackTrace();
+                    }
+                    pencilListAdapter.addAll(pencilPeople);
                 }
-                pencilListAdapter.addAll(pencilPeople);
-            }
-        });
+            });
+        } else {
+            query.fromLocalDatastore();
+            query.findInBackground(new FindCallback<PencilPerson>() {
+                @Override
+                public void done(List<PencilPerson> pencilPeople, ParseException e) {
+                    pencilListAdapter.addAll(pencilPeople);
+                }
+            });
+        }
 
         return view;
     }

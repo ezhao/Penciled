@@ -1,22 +1,23 @@
 package com.herokuapp.ezhao.penciled;
 
-import android.database.Cursor;
-import android.database.DatabaseUtils;
-import android.provider.ContactsContract;
-import android.support.v7.app.ActionBarActivity;
+import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
+import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.widget.CursorAdapter;
-import android.widget.ListView;
-import android.widget.SimpleCursorAdapter;
+
+import com.herokuapp.ezhao.penciled.fragments.AddPencilFragment;
+import com.herokuapp.ezhao.penciled.fragments.PencilListFragment;
 
 
-public class MainActivity extends ActionBarActivity {
-
-    private ListView lvContactsTest;
-    private Cursor mCursor;
+public class MainActivity extends ActionBarActivity implements PencilListFragment.OnAddPencilListener, AddPencilFragment.OnPencilAddedListener {
+    private FragmentManager fragmentManager;
+    private final String ADD_PENCIL_TAG = "Add Pencil";
+    private PencilListFragment pencilListFragment;
+    private AddPencilFragment addPencilFragment;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -25,70 +26,15 @@ public class MainActivity extends ActionBarActivity {
 
         Log.i("Emily", "It has begun");
 
-        // Fetch views
-        lvContactsTest = (ListView) findViewById(R.id.lvContactsTest);
+        fragmentManager = getSupportFragmentManager();
+        FragmentTransaction ft = fragmentManager.beginTransaction();
+        if (pencilListFragment == null) {
+            pencilListFragment = new PencilListFragment();
+        }
 
-        // Create Cursor
-        String[] mProjection = {
-                ContactsContract.Contacts._ID,
-                ContactsContract.Contacts.DISPLAY_NAME_PRIMARY,
-                ContactsContract.Contacts.PHOTO_URI,
-                ContactsContract.Contacts.HAS_PHONE_NUMBER
-        };
-        String mSelectionClause = ContactsContract.Contacts.HAS_PHONE_NUMBER + " = ?";
-        String[] mSelectionArgs = {"1"};
-        String mSortOrder = ContactsContract.Contacts.DISPLAY_NAME_PRIMARY + " ASC";
-        mCursor = getContentResolver().query(
-                ContactsContract.Contacts.CONTENT_URI,
-                mProjection,
-                mSelectionClause,
-                mSelectionArgs,
-                mSortOrder
-        );
-        Log.i("Emily", "mCursor count " + mCursor.getCount());
-
-        // Create CursorAdapter
-        int[] mWordListItems = {
-                R.id.tvContactName,
-                R.id.ivContactImage,
-                R.id.tvEmailAddress
-        };
-        String[] mContactCols = {
-                ContactsContract.Contacts.DISPLAY_NAME_PRIMARY,
-                ContactsContract.Contacts.PHOTO_URI,
-                ContactsContract.Contacts._ID
-        };
-        CursorAdapter mCursorAdapter = new SimpleCursorAdapter(
-                getApplicationContext(),
-                R.layout.contact_list_item,
-                mCursor,
-                mContactCols,
-                mWordListItems,
-                0
-        );
-
-        // Inflate
-        lvContactsTest.setAdapter(mCursorAdapter);
-
-        String mDataQuery = ContactsContract.Data.CONTACT_ID + "=?" +
-                              " AND " +
-                              ContactsContract.Data.MIMETYPE + "='" + ContactsContract.CommonDataKinds.Email.CONTENT_ITEM_TYPE + "'";
-        String contactId = "1";
-        Cursor mDataContentResolver = getContentResolver().query(
-                ContactsContract.Data.CONTENT_URI,
-                new String[] {ContactsContract.Data._ID,
-                              ContactsContract.CommonDataKinds.Email.ADDRESS,
-                              ContactsContract.CommonDataKinds.Email.TYPE
-                              },
-                mDataQuery,
-                new String[] {String.valueOf(contactId)},
-                null
-        );
-        Log.i("Emily", DatabaseUtils.dumpCursorToString(mDataContentResolver));
-
-        Log.i("Emily", "End");
+        ft.replace(R.id.flFragmentPlaceholder, pencilListFragment);
+        ft.commit();
     }
-
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -113,7 +59,39 @@ public class MainActivity extends ActionBarActivity {
     }
 
     @Override
-    protected void onDestroy() {
-        mCursor.close();
+    public void switchToAddPencil() {
+        Log.i("EMILY", "switchToAddPencil called");
+        FragmentTransaction ft = fragmentManager.beginTransaction();
+        if (addPencilFragment == null) {
+            addPencilFragment = new AddPencilFragment();
+        }
+
+        if (addPencilFragment.isAdded()) {
+            ft.show(addPencilFragment);
+        } else {
+            ft.add(R.id.flFragmentPlaceholder, addPencilFragment);
+            ft.addToBackStack(ADD_PENCIL_TAG);
+        }
+
+        if (pencilListFragment.isAdded()) {
+            ft.hide(pencilListFragment);
+        }
+        ft.commit();
+    }
+
+    @Override
+    public void closeAddPencilFragment() {
+        Log.i("EMILY", "closeAddPencilFragment called");
+        FragmentTransaction ft = fragmentManager.beginTransaction();
+        if (pencilListFragment.isAdded()) {
+            ft.show(pencilListFragment);
+        } else {
+            ft.add(R.id.flFragmentPlaceholder, pencilListFragment);
+        }
+
+        if (addPencilFragment.isAdded()) {
+            fragmentManager.popBackStack(ADD_PENCIL_TAG, FragmentManager.POP_BACK_STACK_INCLUSIVE);
+        }
+        ft.commit();
     }
 }
